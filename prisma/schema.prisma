@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Level {
+  L3
+  L4
+  L5
+  L6
+  SDE_I   @map("SDE-I")
+  SDE_II  @map("SDE-II")
+  SDE_III @map("SDE-III")
+  Staff
+  Principal
+}
+
+model Salary {
+  id                 String   @id @default(cuid())
+  company            String   // ALWAYS normalized: lowercase, trimmed
+  role               String
+  level              Level    @map("level_standardized") // L3 | L4 | L5 | L6 | SDE_I | SDE_II | SDE_III | Staff | Principal
+  location           String
+  experience_years   Int
+  base_salary        Float
+  bonus              Float    @default(0)
+  stock              Float    @default(0)
+  total_compensation Float    // ALWAYS computed: base + bonus + stock — NEVER trust client
+  confidence_score   Float    @default(0.8)
+  created_at         DateTime @default(now())
+
+  @@index([company])
+  @@index([level])
+  @@index([role])
+  @@index([location])
+  @@index([company, level, location]) // composite index for filtered queries
+}
+
+enum OfferStatus {
+  ACCEPTED
+  REJECTED
+  NO_OFFER
+}
+
+model Review {
+  id               String   @id @default(cuid())
+  company          String
+  rating_overall   Int      // 1-5
+  rating_wlb       Int      // 1-5
+  rating_culture   Int      // 1-5
+  rating_comp      Int      // 1-5
+  pros             String   @db.Text
+  cons             String   @db.Text
+  advice           String?  @db.Text
+  is_anonymous     Boolean  @default(true)
+  created_at       DateTime @default(now())
+
+  @@index([company])
+}
+
+model Interview {
+  id               String      @id @default(cuid())
+  company          String
+  role             String
+  difficulty       Int         // 1-5
+  offer_status     OfferStatus
+  process_duration Int         // days
+  questions        String[]
+  experience       String?     @db.Text
+  is_anonymous     Boolean     @default(true)
+  created_at       DateTime    @default(now())
+
+  @@index([company])
+  @@index([role])
+}
